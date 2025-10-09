@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="2.5;url=vault.html">
+<title>Vault of the North — Redirecting...</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#040b10">
+<style>
+  :root {
+    --bg: #030608;
+    --accent: #7fe6ff;
+    --warm: #ffb66b;
+  }
+  html,body {
+    height: 100%;
+    margin: 0;
+    background: radial-gradient(circle at center, #04121a 0%, #010306 80%);
+    color: #dceeff;
+    font-family: 'Cinzel', serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  h1 {
+    font-size: 22px;
+    color: var(--warm);
+    letter-spacing: 1px;
+    margin: 0;
+  }
+  .loader {
+    margin-top: 20px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid rgba(127,230,255,0.08);
+    border-top-color: var(--accent);
+    animation: spin 3s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  p {
+    margin-top: 16px;
+    color: #9fb4c9;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .hint {
+    font-size: 12px;
+    margin-top: 8px;
+    color: #647b8f;
+  }
+  .rune {
+    font-size: 28px;
+    color: var(--accent);
+    margin-top: 14px;
+    letter-spacing: 6px;
+    animation: pulse 1.8s ease-in-out infinite alternate;
+  }
+  @keyframes pulse {
+    from { opacity: 0.4; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.15); }
+  }
+</style>
+</head>
+<body>
+  <h1>Vault of the North</h1>
+  <div class="loader"></div>
+  <p>Summoning the Vault...<br>Preparing runes and forging gates.</p>
+  <div class="rune">ᚠ ᛏ ᚱ</div>
+  <p class="hint">(You will be redirected shortly)</p>
+
+  <noscript>
+    <p style="color:#ff9b9b;">JavaScript disabled — click below to enter manually.</p>
+    <a href="vault.html" style="color:#7fe6ff;font-weight:700;">Enter Vault</a>
+  </noscript>
+</body>
+</html>
