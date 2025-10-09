@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Vault of the North — Mobile Rites</title>
+<meta name="color-scheme" content="dark">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#06080a;
+    --card:#0e1416;
+    --accent:#7fe6ff;
+    --warm:#ffb66b;
+    --muted:#9fb4c9;
+    --glass: rgba(255,255,255,0.03);
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#031017 0%,#04121a 60%,#020305 100%);font-family:'Cinzel',serif;color:#dceeff;-webkit-font-smoothing:antialiased}
+  .app{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:12px;box-sizing:border-box}
+  .stage{width:100%;max-width:920px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.05)); border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(2,6,10,0.7);border:1px solid var(--glass);min-height:82vh;display:flex;flex-direction:column;align-items:stretch;position:relative;overflow:hidden;margin-bottom:14px}
+  header{display:flex;align-items:center;gap:10px;padding:8px 6px}
+  .title{font-size:18px;color:var(--warm);letter-spacing:1px}
+  .subtitle{font-size:12px;color:var(--muted)}
+  .content{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:6px}
+  .controls{display:flex;gap:10px;justify-content:center;padding:8px}
+  button{background:linear-gradient(180deg,#08131a,#041018);color:#dff6ff;border:1px solid rgba(127,230,255,0.08);padding:10px 14px;border-radius:10px;font-weight:700}
+  button.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.03);color:#9fb4c9}
+  .note{font-size:12px;color:#cfe8ff;text-align:center;margin-top:8px}
+  /* canvas */
+  .canvas-wrap{width:100%;max-width:760px;flex:1;display:flex;align-items:center;justify-content:center;padding:6px}
+  canvas{width:100%;height:100%;max-height:480px;border-radius:10px;display:block}
+  /* forge UI */
+  .forge-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:8px}
+  .material{width:88px;height:88px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0b1112,#071015);border:1px solid rgba(255,255,255,0.03);color:#dff6ff;font-weight:700;user-select:none}
+  .slot{width:84px;height:84px;border-radius:10px;border:2px dashed rgba(127,230,255,0.06);display:flex;align-items:center;justify-content:center}
+  .progress{width:82%;height:14px;border-radius:8px;background:#081018;border:1px solid rgba(255,255,255,0.02);margin-top:10px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,#ffb66b,#ffd27a);transition:width 0.08s linear}
+  .strikeCount{font-weight:700;color:#cfe8ff;margin-left:8px}
+  /* rune grid */
+  .rune-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:8px;width:100%;max-width:520px}
+  .rune{height:72px;border-radius:10px;background:linear-gradient(180deg,#071014,#031016);display:flex;align-items:center;justify-content:center;color:#cfefff;font-size:22px;border:1px solid rgba(255,255,255,0.03);user-select:none}
+  .rune.active{box-shadow:0 0 14px rgba(127,230,255,0.15);background:linear-gradient(180deg,#0b2b34,#062026);color:var(--accent)}
+  .modal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:linear-gradient(180deg,#08121a,#041018);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);z-index:60;max-width:92%;width:360px}
+  .modal pre{background:#071018;padding:8px;border-radius:8px;color:#cfefff;overflow:auto}
+  .small{font-size:13px;color:#bcd8ef}
+  .center{text-align:center}
+  footer{font-size:12px;color:#9fb4c9;text-align:center;margin-top:6px}
+  .hidden{display:none}
+  /* animations */
+  .lightning { position:absolute; left:50%; transform:translateX(-50%); top:-20%; width:4px; height:120%; pointer-events:none; opacity:0; }
+  .bolt { position:absolute; left:50%; transform:translateX(-50%); width:6px; background:linear-gradient(180deg,#fff,#cfeaff); box-shadow: 0 0 18px #9ff; filter:blur(0.8px); opacity:0.0; border-radius:3px; }
+  @keyframes boltDown {
+    0% { opacity:0; transform:translateX(-50%) translateY(-60%) scaleY(0.2); }
+    10% { opacity:1; transform:translateX(-50%) translateY(10%) scaleY(1.1); }
+    60% { opacity:1; transform:translateX(-50%) translateY(40%) scaleY(1); }
+    100% { opacity:0; transform:translateX(-50%) translateY(80%) scaleY(1); }
+  }
+  /* mobile */
+  @media (max-width:520px){
+    .stage{padding:10px;border-radius:8px;min-height:88vh}
+    canvas{max-height:58vh}
+    .rune-grid{grid-template-columns:repeat(3,1fr)}
+    .material{width:78px;height:78px}
+    .slot{width:72px;height:72px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+    <div id="stage1" class="stage" aria-live="polite">
+        <header>
+            <div>
+            <div class="title">Vault of the North</div>
+            <div class="subtitle">Rite I — Words of Yggdrasil</div>
+            </div>
+            <div id="timerCircle" style="margin-left:auto;width:40px;height:40px;border:3px solid var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent)">30</div>
+        </header>
+        <div class="content">
+            <div id="mantraBox" style="max-width:600px;text-align:center;line-height:1.5;font-size:14px;color:#cfefff;">
+              <p style="opacity:0.85">The roots bind the realms.<br>
+              The branches touch the stars.<br>
+              Speak the truth of fire before metal,<br>
+              and the gate shall open.</p>
+            </div>
+            <textarea id="playerInput" rows="4" placeholder="Type the ancient words..." style="margin-top:14px;width:90%;max-width:600px;height:120px;border-radius:10px;background:#081018;color:#dceeff;border:1px solid rgba(127,230,255,0.1);padding:8px;font-family:'Cinzel',serif;font-size:13px;"></textarea>
+            <div id="feedback" class="note" style="min-height:20px;margin-top:6px;"></div>
+        </div>
+        <div class="controls">
+            <button id="startYggBtn">Start Rite</button>
+            <button id="stage1Next" class="ghost" disabled>Next Rite</button>
+            <button id="stage1Reset">Reset</button>
+        </div>
+    </div>
+
+
+  <!-- STAGE 2 -->
+  <div id="stage2" class="stage hidden" aria-live="polite">
+    <header><div><div class="title">Rite II — The Forge of Mjölnir</div><div class="subtitle">Craft the hammer then strike it true</div></div></header>
+    <div class="content">
+      <div style="width:100%;max-width:760px;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div class="forge-row" id="materialsRow">
+          <div class="material" data-type="fire" id="matFire">🔥 Fire</div>
+          <div class="material" data-type="metal" id="matMetal">⛓ Metal</div>
+          <div class="material" data-type="light" id="matLight">⚡ Lightning</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:8px">
+          <div class="slot" id="slot1"></div>
+          <div class="slot" id="slot2"></div>
+          <div class="slot" id="slot3"></div>
+        </div>
+        <div class="progress" aria-hidden="true"><div class="fill" id="forgeFill"></div></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+          <button id="strikeBtn" disabled>Strike Hammer</button>
+          <div class="small">Strikes: <span class="strikeCount" id="strikeCount">0</span>/100</div>
+        </div>
+        <div class="note">Arrange: <strong>Fire → Metal → Lightning</strong>. Then strike 100 times. <span style="color:#ffd79e;font-weight:700">Screenshot the rune sequence when it appears.</span></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="stage2Next" class="ghost" disabled>Next Rite</button>
+      <button id="stage2Reset">Reset Forge</button>
+    </div>
+
+    <!-- lightning container -->
+    <div id="lightningArea" class="lightning" aria-hidden="true"></div>
+  </div>
+
+  <!-- STAGE 3 -->
+  <div id="stage3" class="stage hidden" aria-live="polite">
+    <header><div><div class="title">Rite III — Runes of Awakening</div><div class="subtitle">Tap the runes in the order the gods spoke</div></div></header>
+    <div class="content">
+      <div class="center small" style="margin-bottom:8px">Tap the runes in the correct order. Wrong taps will smoke and reset your current attempt.</div>
+      <div class="rune-grid" id="runeGrid"></div>
+      <div style="margin-top:12px" class="small center">Sequence entered: <span id="entered">—</span></div>
+    </div>
+    <div class="controls">
+      <button id="stage3Reset" class="ghost">Reset Runes</button>
+    </div>
+  </div>
+
+  <!-- Final modal container -->
+  <div id="modalRoot"></div>
+  <footer>Designed for mobile-first play. Use earbuds for atmosphere (optional).</footer>
+</div>
+
+<script>
+/* ---------- Utilities ---------- */
+function $(id){return document.getElementById(id)}
+function showModal(html, closeAfterMs){ closeModal(); const root=$('modalRoot'); const div=document.createElement('div'); div.className='modal'; div.innerHTML=html; root.appendChild(div); if(closeAfterMs) setTimeout(()=>div.remove(), closeAfterMs); }
+function closeModal(){ const root=$('modalRoot'); root.innerHTML=''; }
+
+/* ---------- Stage Navigation ---------- */
+function showStage(n){
+  ['stage1','stage2','stage3'].forEach((id,i)=> {
+    const el=$(id);
+    if(i+1===n){ el.classList.remove('hidden'); el.scrollIntoView({behavior:'smooth'}); }
+    else el.classList.add('hidden');
+  });
+}
+
+/* ---------- STAGE 1: Typing challenge (30s) ---------- */
+(() => {
+  // Mantra text (displayed without quotes)
+  const mantra = "The roots bind the realms. The branches touch the stars. Speak the truth of fire before metal, and the gate shall open.";
+  let timer = 30;
+  let interval;
+  let active = false;
+
+  const input = $('playerInput');
+  const feedback = $('feedback');
+  const timerCircle = $('timerCircle');
+  const startBtn = $('startYggBtn');
+
+  function normalizeText(s){
+    // lowercase, remove non-alphanumeric characters, collapse spaces
+    return s.toLowerCase().replace(/[^a-z0-9\s]/gi,'').replace(/\s+/g,' ').trim();
+  }
+
+  function resetAll(){
+    clearInterval(interval);
+    timer = 30;
+    timerCircle.textContent = "30";
+    timerCircle.style.borderColor = "var(--accent)";
+    input.value = "";
+    input.disabled = true;
+    feedback.innerHTML = "";
+    startBtn.disabled = false;
+    active = false;
+    $('stage1Next').disabled = true;
+  }
+
+  function startRite(){
+    input.disabled = false;
+    input.focus();
+    active = true;
+    startBtn.disabled = true;
+    feedback.style.color = "#cfe8ff";
+    feedback.innerHTML = "Begin the Rite. You have 30 seconds.";
+    timer = 30;
+    timerCircle.textContent = timer;
+    interval = setInterval(()=>{
+      timer--;
+      timerCircle.textContent = timer;
+      if(timer <= 10) timerCircle.style.borderColor = "#ffb66b";
+      if(timer <= 5) timerCircle.style.borderColor = "#ff4444";
+      if(timer <= 0){
+        failRite("Time has run out. The gate remains closed.");
+      }
+    },1000);
+  }
+
+  function failRite(msg){
+    clearInterval(interval);
+    active = false;
+    input.disabled = true;
+    feedback.style.color = "#ff9999";
+    feedback.innerHTML = msg;
+    // fail flash
+    document.body.style.filter="brightness(0.6)";
+    setTimeout(()=>document.body.style.filter="brightness(1)",400);
+    setTimeout(()=>resetAll(),1200);
+  }
+
+  function successRite(){
+    clearInterval(interval);
+    active = false;
+    feedback.style.color = "#a8ffb6";
+    feedback.innerHTML = "The words resonate through the roots...";
+    // starfall animation
+    starfall();
+    setTimeout(()=>{
+      showModal(`
+        <div class="center"><h3 style="margin:0;color:var(--warm)">Scroll: Rune Translation</h3></div>
+        <p class="small">The tree reveals the words of the gods. <strong>Screenshot this or you will miss it.</strong></p>
+        <pre>ᚠ - F    ᚢ - U   ᚦ - TH   ᚨ - A   ᚱ - R   ᚾ - N
+ᛁ - I    ᛃ - J   ᛏ - T    ᛒ - B   ᛗ - M   ᛚ - L</pre>
+        <p class="small">Hidden note: <strong>Fire speaks before Metal.</strong></p>
+        <div style="text-align:right"><button onclick="closeModal()">Close</button></div>
+      `);
+      $('stage1Next').disabled = false;
+    }, 800);
+  }
+
+  function starfall(){
+    const canvas=document.createElement('canvas');
+    canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+    canvas.style.position='fixed';canvas.style.left='0';canvas.style.top='0';
+    canvas.style.pointerEvents='none';canvas.style.zIndex='120';
+    document.body.appendChild(canvas);
+    const ctx=canvas.getContext('2d');
+    const stars=[];
+    for(let i=0;i<80;i++){
+      stars.push({x:Math.random()*canvas.width,y:Math.random()*-200,vx:(Math.random()-0.5)*1,vy:2+Math.random()*2,r:2+Math.random()*2,a:1});
+    }
+    function animate(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(const s of stars){
+        s.x+=s.vx; s.y+=s.vy; s.a-=0.005;
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle='rgba(255,240,200,'+s.a+')';
+        ctx.fill();
+      }
+      if(stars.some(s=>s.a>0)) requestAnimationFrame(animate);
+      else canvas.remove();
+    }
+    animate();
+  }
+
+  input.addEventListener('input', ()=>{
+    if(!active) return;
+    const val = input.value;
+    // normalize both strings for comparison (ignores punctuation/case/extra spaces)
+    const normTyped = normalizeText(val);
+    const normMantra = normalizeText(mantra);
+    // if typed is prefix of mantra, continue; if equals, success; else fail
+    if(normMantra.startsWith(normTyped)){
+      if(normTyped === normMantra){
+        successRite();
+        input.disabled = true;
+      } else {
+        // still valid prefix, continue
+        feedback.style.color = "#cfe8ff";
+        feedback.innerHTML = "Keep speaking the words...";
+      }
+    } else {
+      failRite("The words falter. The roots reject your voice.");
+    }
+  });
+
+  $('stage1Reset').addEventListener('click', resetAll);
+  startBtn.addEventListener('click', startRite);
+  $('stage1Next').addEventListener('click', ()=>showStage(2));
+  resetAll();
+})();
+
+/* ---------- STAGE 2: Forge (tap materials to fill slots, then 100 strikes) ---------- */
+(() => {
+  const orderSlots = [ $('slot1'), $('slot2'), $('slot3') ];
+  let placed = [null,null,null];
+  const matFire = $('matFire'), matMetal = $('matMetal'), matLight = $('matLight');
+  const strikeBtn = $('strikeBtn'), fillBar = $('forgeFill');
+  let strikes = 0;
+
+  function placeMaterial(type){
+    const idx = placed.findIndex(v=>v===null);
+    if(idx === -1) return;
+    placed[idx] = type;
+    orderSlots[idx].textContent = type.toUpperCase();
+    orderSlots[idx].style.opacity = '0.95';
+    checkOrder();
+  }
+  [matFire, matMetal, matLight].forEach(el=>{
+    el.addEventListener('click', ()=> placeMaterial(el.dataset.type || (el.id==='matFire'?'fire': el.id==='matMetal'?'metal':'light')));
+  });
+
+  $('stage2Reset').addEventListener('click', resetForge);
+  function resetForge(){
+    placed = [null,null,null];
+    orderSlots.forEach(s=> { s.innerHTML=''; s.style.opacity='0.6' });
+    strikes = 0; strikeBtn.disabled = true; fillBar.style.width='0%';
+    $('strikeCount').innerText = '0';
+    $('stage2Next').disabled = true;
+  }
+
+  function checkOrder(){
+    if(placed[0]==='fire' && placed[1]==='metal' && placed[2]==='light'){
+      strikeBtn.disabled = false;
+    } else {
+      strikeBtn.disabled = true;
+    }
+  }
+
+  strikeBtn.addEventListener('click', ()=>{
+    strikes++;
+    $('strikeCount').innerText = strikes;
+    fillBar.style.width = Math.min(100, (strikes)) + '%';
+    strikeBtn.style.transform='scale(0.98)';
+    setTimeout(()=>strikeBtn.style.transform='scale(1)',80);
+
+    if(strikes >= 100){
+      strikeBtn.disabled = true;
+      playLightningSequence(3, ()=> {
+        setTimeout(()=> {
+          showModal(`
+            <div class="center"><h3 style="margin:0;color:var(--warm)">Forged: Mjölnir</h3></div>
+            <p class="small">The hammer is whole again. The gods whisper the path of runes. <strong>Screenshot this or you will miss it.</strong></p>
+            <pre style="margin-top:8px">Rune Sequence (tap in Stage III):
+ᚠ → ᚦ → ᛁ → ᛚ → ᚱ</pre>
+            <div style="text-align:right"><button onclick="closeModal()">Close</button></div>
+          `);
+          $('stage2Next').disabled = false;
+        }, 600);
+      });
+    }
+  });
+
+  function playLightningSequence(count, cb){
+    const area = $('lightningArea');
+    area.innerHTML = '';
+    for(let i=0;i<count;i++){
+      const b = document.createElement('div'); b.className='bolt';
+      b.style.left = (40 + Math.random()*60) + '%';
+      b.style.height = (180 + Math.random()*60) + 'px';
+      b.style.width = '6px';
+      b.style.opacity = 0;
+      area.appendChild(b);
+      setTimeout(()=> {
+        b.style.opacity = 1;
+        b.style.animation = 'boltDown 700ms ease-out forwards';
+      }, i*700);
+    }
+    setTimeout(()=>{ area.innerHTML=''; if(cb) cb(); }, count*800 + 400);
+  }
+
+  $('stage2Next').addEventListener('click', ()=> { showStage(3); });
+  resetForge();
+})();
+
+/* ---------- STAGE 3: Runes tapping ---------- */
+(() => {
+  const runeGrid = $('runeGrid');
+  const pool = ['ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚾ','ᛁ','ᛃ','ᛏ','ᛒ','ᛗ','ᛚ'];
+  const required = ['ᚠ','ᚦ','ᛁ','ᛚ','ᚱ'];
+  let entered = [];
+
+  function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
+  function render(){
+    runeGrid.innerHTML='';
+    const shuffled = shuffle(pool.slice());
+    shuffled.forEach(r => {
+      const div = document.createElement('div');
+      div.className='rune';
+      div.innerText = r;
+      div.dataset.r = r;
+      div.addEventListener('click', ()=> onRuneTap(div));
+      runeGrid.appendChild(div);
+    });
+  }
+
+  function onRuneTap(el){
+    const r = el.dataset.r;
+    entered.push(r);
+    $('entered').innerText = entered.join(' - ');
+    el.classList.add('active');
+    for(let i=0;i<entered.length;i++){
+      if(entered[i] !== required[i]){
+        el.style.transform='translateY(-6px)';
+        el.style.opacity='0.6';
+        setTimeout(()=>{ el.style.transform=''; el.style.opacity='1'; },250);
+        createSmoke(el);
+        setTimeout(()=> resetAttempt(), 520);
+        return;
+      }
+    }
+    if(entered.length === required.length){
+      igniteRunes();
+    }
+  }
+
+  function resetAttempt(){
+    entered = [];
+    $('entered').innerText = '—';
+    Array.from(runeGrid.children).forEach(c=>c.classList.remove('active'));
+  }
+
+  $('stage3Reset').addEventListener('click', resetAttempt);
+
+  function createSmoke(el){
+    const rect = el.getBoundingClientRect();
+    const s = document.createElement('div');
+    s.style.position='fixed';
+    s.style.left = (rect.left + rect.width/2 - 12) + 'px';
+    s.style.top = (rect.top + rect.height/2 - 12) + 'px';
+    s.style.width='24px'; s.style.height='24px';
+    s.style.borderRadius='50%';
+    s.style.background='radial-gradient(circle, rgba(150,150,150,0.6) 0%, rgba(80,80,80,0.4) 40%, transparent 70%)';
+    s.style.opacity='0.95';
+    s.style.zIndex=120;
+    document.body.appendChild(s);
+    let a=0;
+    const t = setInterval(()=> {
+      a++;
+      s.style.transform = `translateY(-${a*2}px) scale(${1+a*0.02})`;
+      s.style.opacity = (1 - a*0.06).toString();
+      if(a>20){ clearInterval(t); s.remove(); }
+    }, 28);
+  }
+
+  function igniteRunes(){
+    for(let i=0;i<28;i++){
+      setTimeout(()=> spawnSpark(), i*40);
+    }
+    setTimeout(()=> {
+      showModal(`
+        <div class="center"><h3 style="margin:0;color:var(--warm)">The Vault Responds</h3></div>
+        <p class="small">The runes ignite and reveal a sequence of numbers:</p>
+        <div style="text-align:center;font-size:20px;color:var(--accent);font-weight:700;margin-top:6px">2 - 5 - 9 - 33 - 9</div>
+        <p class="small" style="margin-top:8px">The gods spoke in numbers. The wise read them through the Word. <strong>Holy Bible is the key.</strong></p>
+        <div style="text-align:right"><button onclick="closeModal()">Close</button></div>
+      `);
+    }, 800);
+  }
+
+  function spawnSpark(){
+    const s = document.createElement('div');
+    s.style.position='fixed';
+    s.style.left = (window.innerWidth*0.25 + Math.random()*window.innerWidth*0.5) + 'px';
+    s.style.top = (window.innerHeight - 120 + Math.random()*30) + 'px';
+    s.style.width='6px'; s.style.height='6px'; s.style.borderRadius='50%';
+    s.style.background = 'radial-gradient(circle, #fff 0%, #ffd78f 30%, transparent 70%)';
+    s.style.zIndex = 140;
+    s.style.opacity='0.95';
+    document.body.appendChild(s);
+    let dist = 0;
+    const t = setInterval(()=> {
+      dist++;
+      s.style.transform = `translateY(-${dist*3}px) scale(${1 - dist*0.012})`;
+      s.style.opacity = `${1 - dist*0.02}`;
+      if(dist>50){ clearInterval(t); try{s.remove()}catch(e){} }
+    }, 24);
+  }
+
+  render();
+})();
+
+/* ---------- Init show Stage1 ---------- */
+showStage(1);
+
+/* Prevent double-tap zoom on mobile for better feel */
+document.addEventListener('touchstart', function(){}, {passive:true});
+</script>
+</body>
+</html>
